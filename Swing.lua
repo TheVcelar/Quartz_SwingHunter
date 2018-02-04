@@ -65,29 +65,32 @@ local function OnUpdate()
 		else
 			swingstatusbar:SetValue(perc)
 		end
-		autoshotbar:SetWidth(0.5/duration*swingbar_width)
-		
-		local gcdstart = 0
-		local gcdend = 0
-		
-		if gcdstarttime < starttime+duration and gcdstarttime+1.5 > starttime then 
-			if gcdstarttime < starttime then
-				gcdstart = 0
-			else
-				gcdstart = (gcdstarttime-starttime)/duration*swingbar_width
-			end
-			if gcdstarttime+1.5 > starttime+duration then
-				gcdend = swingbar_width
-			else
-				gcdend = (gcdstarttime+1.5-starttime)/duration*swingbar_width
-			end
-		end
-	
-		gcdbar:SetPoint('LEFT', swingbar, 'LEFT', gcdstart, 0)
-		gcdbar:SetWidth(gcdend-gcdstart)
-
 	end
 end
+
+local function UpdateHunterBars()
+	autoshotbar:SetWidth(0.5/duration*swingbar_width)
+	
+	local gcdstart = 0
+	local gcdend = 1
+	
+	if gcdstarttime < starttime+duration and gcdstarttime+1.5 > starttime then 
+		if gcdstarttime < starttime then
+			gcdstart = 0
+		else
+			gcdstart = (gcdstarttime-starttime)/duration*swingbar_width
+		end
+		if gcdstarttime+1.5 > starttime+duration then
+			gcdend = swingbar_width
+		else
+			gcdend = (gcdstarttime+1.5-starttime)/duration*swingbar_width
+		end
+	end
+	
+	gcdbar:SetPoint('LEFT', swingbar, 'LEFT', gcdstart, 0)
+	gcdbar:SetWidth(gcdend-gcdstart)
+end
+
 local function OnHide()
 	swingbar:SetScript('OnUpdate', nil)
 end
@@ -167,22 +170,6 @@ function QuartzSwing:STOP_AUTOREPEAT_SPELL()
 		swingmode = nil
 	end
 end
-					   -- id     mod   state
-local hasteAuras = 	{   { 6150,  1.150, 0 },		-- Quick Shots
-						{ 3045,  1.400, 0 },		-- Rapid Fire
-						{ 34775, 1.206, 0 }, 		-- DST proc
-						{ 35476, 1.051, 0 },		-- Drums of Battle
-				        { 2825,  1.300, 0 },		-- BloodLust
-						{ 32182, 1.300, 0 },		-- Heroism
-						{ 28507, 1.254, 0 } }		-- Haste Potion}
-
--- blizzard screws that global up, double usage in CombatLog.lua and GlobalStrings.lua, so we create it ourselves
-local COMBATLOG_FILTER_ME = bit.bor(
-				COMBATLOG_OBJECT_AFFILIATION_MINE or 0x00000001,
-				COMBATLOG_OBJECT_REACTION_FRIENDLY or 0x00000010,
-				COMBATLOG_OBJECT_CONTROL_PLAYER or 0x00000100,
-				COMBATLOG_OBJECT_TYPE_PLAYER or 0x00000400
-				)
 
 function QuartzSwing:UNIT_AURA(unitID)
 	if unitID == 'player' and isSwingBarShown == 1 then
@@ -200,6 +187,7 @@ function QuartzSwing:UNIT_AURA(unitID)
 			local timeToShoot = (duration - timeAlreadySpent)/hasteMod
 			duration = timeAlreadySpent + timeToShoot
 			durationtext:SetText(('%.1f'):format(duration))
+			UpdateHunterBars()
 			swingbar:Show()
 		end
 	end
@@ -220,9 +208,12 @@ function QuartzSwing:UNIT_SPELLCAST_SUCCEEDED(unit, spell)
 			swingmode = 1
 			self:Shoot()
 		else
-			gcdstarttime = GetSpellCooldown('Steady Shot')
-			if isSwingBarShown == 1 and gcdstarttime > 0 then			
-				swingbar:Show()
+			if not spell=='Kill Command' then 
+				gcdstarttime = GetSpellCooldown('Steady Shot')
+				if isSwingBarShown == 1 and gcdstarttime > 0 then			
+					UpdateHunterBars()
+					swingbar:Show()
+				end
 			end
 		end
 	end
@@ -232,6 +223,7 @@ function QuartzSwing:UNIT_SPELLCAST_START(unit, spell)
 	if unit == 'player' then
 		gcdstarttime = GetSpellCooldown('Steady Shot')
 		if isSwingBarShown == 1 and gcdstarttime > 0 then			
+			UpdateHunterBars()
 			swingbar:Show()
 		end
 	end
@@ -260,6 +252,7 @@ function QuartzSwing:Shoot()
 	duration = UnitRangedDamage('player')
 	durationtext:SetText(('%.1f'):format(duration))
 	starttime = GetTime()
+	UpdateHunterBars()
 	swingbar:Show()
 	isSwingBarShown = 1
 end
