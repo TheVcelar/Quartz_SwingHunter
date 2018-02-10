@@ -208,7 +208,7 @@ function QuartzSwing:UNIT_SPELLCAST_SUCCEEDED(unit, spell)
 			swingmode = 1
 			self:Shoot()
 		else
-			if not spell=='Kill Command' then 
+			if not (spell=='Kill Command') then
 				gcdstarttime = GetSpellCooldown('Steady Shot')
 				if isSwingBarShown == 1 and gcdstarttime > 0 then			
 					UpdateHunterBars()
